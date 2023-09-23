@@ -22,6 +22,7 @@ import {
 import { ColorModeSwitcher } from "./ColorModeSwitcher"
 import { Logo } from "./Logo"
 import { FaChevronDown } from "react-icons/fa"
+import { ethers } from "ethers"
 
 declare global {
   interface Window{
@@ -42,20 +43,27 @@ export const App = () => {
   const [account, setAccount] = React.useState('')
   const [rpc, setRPC] = React.useState('')
 
+  const [signer, setSigner] = React.useState<any>(null)
 
-  const connect = async () => {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
+  React.useEffect(() => {
+    const jsonRPC = new ethers.providers.JsonRpcProvider(rpc || 'http://18.196.63.236:8545/')
+    const sign = new ethers.Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', jsonRPC);
+    
+    setSigner(sign);
+    
+    (async () => {
+      console.log((await jsonRPC.getNetwork()).chainId)
+      setAccount(await sign.getAddress())
+    })();
 
-    console.log(accounts)
+  }, [rpc])
 
-    setAccount(accounts[0])
-  }
-
-  const addLiquidity = () => {
+  const addLiquidity = async () => {
 
     console.log(lowerTick, upperTick, amount, rpc)
+
+  
+    console.log(await signer.signMessage('hello world'))
 
   }
 
@@ -68,7 +76,7 @@ export const App = () => {
             <option value={"http://18.196.63.236:8545/"}>Chain A</option>
             <option value={"http://3.79.184.123:8545/"}>Chain B</option>
           </Select>
-          {!account ? <Button w={'250px'} variant={'outline'} onClick={connect}>Connect Wallet</Button> : <span>{account.substring(0, 5)}...{account.substring(account.length - 5)}</span>}
+          {!signer ? <span>Select Chain</span> : <span>{account.substring(0, 5)}...{account.substring(account.length - 5)}</span>}
           <ColorModeSwitcher  />
         </Flex>
         <VStack spacing={8}>

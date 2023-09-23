@@ -13,6 +13,7 @@
     "@types/node": "^12.0.0",
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.4",
+    "ethers": "5.7.2",
     "framer-motion": "^6.2.9",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
