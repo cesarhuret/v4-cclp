@@ -1,0 +1,23 @@
+{
+  "name": "TestChainA",
+  "chainId": 696969,
+  "userKeys": [],
+  "ownerKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  "operatorKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  "relayerKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  "adminKeys": [
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  ],
+  "threshold": 1,
+  "lastRelayedBlock": 290,
+  "lastExpressedBlock": 290,
+  "gatewayAddress": "0xb932C8342106776E73E39D695F3FFC3A9624eCE0",
+  "gasReceiverAddress": "0x2c8ED11fd7A058096F2e5828799c68BE88744E2F",
+  "constAddressDeployerAddress": "0xe58222DE921Cb5bD5179f2777a0BA8532d1D59bd",
+  "create3DeployerAddress": "0x935D9cb0E663571b48EE2C37C707ab6626c07c2F",
+  "tokens": {
+    "usdc": "0xde7972E52E7fdF0E0B551Bd45ecAee5Ce39a3120",
+    "usdt": "0x5D848E2f794FBab546E8512B2eeC73dD669Ed5Db"
+  },
+  "providerUrl": "http://18.196.63.236:8545/"
+}
