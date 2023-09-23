@@ -20,7 +20,7 @@ import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
+contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
     using Strings for string;
@@ -74,7 +74,7 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         token0Symbol = IERC20Metadata(Currency.unwrap(key.currency0)).symbol();
         token1Symbol = IERC20Metadata(Currency.unwrap(key.currency1)).symbol();
 
-        return CrosschainRouterHook.beforeInitialize.selector;
+        return CrossChainRouterHook.beforeInitialize.selector;
     }
 
     function addLiquidity(PoolKey memory key, IPoolManager.ModifyPositionParams memory params)
@@ -84,14 +84,14 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         delta = abi.decode(poolManager.lock(abi.encode(CallbackData(msg.sender, key, params))), (BalanceDelta));
     }
 
-    function beforeModifyPosition(address, PoolKey calldata, IPoolManager.ModifyPositionParams calldata, bytes calldata)
+    function beforeModifyPosition(address sender, PoolKey calldata, IPoolManager.ModifyPositionParams calldata, bytes calldata)
         external
         override
         returns (bytes4)
     {
-        require(msg.sender == address(this), "Sender must be hook");
+        require(sender == address(this), "Sender must be hook");
 
-        return CrosschainRouterHook.beforeModifyPosition.selector;
+        return CrossChainRouterHook.beforeModifyPosition.selector;
     }
     
     function lockAcquired(bytes calldata rawData)
@@ -103,6 +103,7 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         CallbackData memory data = abi.decode(rawData, (CallbackData));
         PoolKey memory key = data.key;
         PoolId poolId = key.toId();
+        address sender = data.sender;
         IPoolManager.ModifyPositionParams memory params = data.params;
         
         BalanceDelta delta;
@@ -114,6 +115,9 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         } else {
             // first, bridge out a portion
             uint128 liquidityToBridge = uint128(uint256(params.liquidityDelta) * bridgeOutPercent / 100);
+            console.log("bridgeOutPercent", bridgeOutPercent);
+            console.log("liquidityDelta", uint256(params.liquidityDelta));
+            console.log("liquidityToBridge", liquidityToBridge);
 
             (uint160 currentSqrtPriceX96, int24 currentTick,,,,) = poolManager.getSlot0(poolId);
 
@@ -125,7 +129,7 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
                             liquidityToBridge,
                             false
                         );
-                _bridgeOut(data.key.currency0, _token0Symbol, amount0);
+                _bridgeOut(sender, data.key.currency0, _token0Symbol, amount0);
             } else if (currentTick < params.tickUpper) {
                 // bridge out both
                 string memory _token0Symbol = token0Symbol;
@@ -143,8 +147,8 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
                         );
                 
                 // TODO: the recipient only adds LP in the second call
-                _bridgeOut(data.key.currency0, _token0Symbol, amount0);
-                _bridgeOut(data.key.currency1, _token1Symbol, amount1);
+                _bridgeOut(sender, data.key.currency0, _token0Symbol, amount0);
+                _bridgeOut(sender, data.key.currency1, _token1Symbol, amount1);
             } else {
                 // bridge out token1
                 string memory _token1Symbol = token1Symbol;
@@ -153,7 +157,7 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
                             liquidityToBridge,
                             false
                         );
-                _bridgeOut(data.key.currency1, _token1Symbol, amount1);
+                _bridgeOut(sender, data.key.currency1, _token1Symbol, amount1);
             }
 
             // next, add liquidity to pool manager with the remaining liquidity
@@ -167,7 +171,7 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         return abi.encode(delta);
     }
     
-    function _bridgeOut(Currency currency, string memory symbol, uint256 amount) internal {
+    function _bridgeOut(address sender, Currency currency, string memory symbol, uint256 amount) internal {
         if (amount == 0) return;
         require(!currency.isNative(), "ETH not supported");
 
@@ -177,19 +181,22 @@ contract CrosschainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         // TODO: define the payload
         bytes memory payload = ZERO_BYTES;
 
-        token.transferFrom(msg.sender, address(this), amount);
-        token.approve(address(gateway), amount);
-        gasService.payNativeGasForContractCallWithToken{ value: 0 wei }( 
-            address(this),
-            destinationChain,
-            destinationContract,
-            payload,
-            symbol,
-            amount,
-            msg.sender
-        );
+        token.transferFrom(sender, address(this), amount);
 
-        gateway.callContractWithToken(destinationChain, destinationContract, payload, symbol, amount);
+        token.transfer(address(gateway), amount);
+        
+        // token.approve(address(gateway), amount);
+        // gasService.payNativeGasForContractCallWithToken{ value: 0 wei }( 
+        //     address(this),
+        //     destinationChain,
+        //     destinationContract,
+        //     payload,
+        //     symbol,
+        //     amount,
+        //     msg.sender
+        // );
+
+        // gateway.callContractWithToken(destinationChain, destinationContract, payload, symbol, amount);
     }
 
     function _takeDeltas(address sender, PoolKey memory key, BalanceDelta delta) internal {
