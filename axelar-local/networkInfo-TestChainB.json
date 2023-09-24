@@ -9,15 +9,12 @@
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   ],
   "threshold": 1,
-  "lastRelayedBlock": 404,
-  "lastExpressedBlock": 404,
-  "gatewayAddress": "0xc6B407503dE64956Ad3cF5Ab112cA4f56AA13517",
-  "gasReceiverAddress": "0x7A28cf37763279F774916b85b5ef8b64AB421f79",
-  "constAddressDeployerAddress": "0x42D9e1e68933567B0777CB454Ecb04aADa2037e5",
-  "create3DeployerAddress": "0x86b629DB6B8f1Fc30Cb02e32da0BB7e14a02A4DA",
-  "tokens": {
-    "usdc": "0x7dDFF103A162Cb34732FD63A0C4BaB30457ed7e7",
-    "usdt": "0x767Bc7a3Ddb317CAA86aD831c30F32EC709187Ea"
-  },
+  "lastRelayedBlock": 425,
+  "lastExpressedBlock": 425,
+  "gatewayAddress": "0xbe18A1B61ceaF59aEB6A9bC81AB4FB87D56Ba167",
+  "gasReceiverAddress": "0xd038A2EE73b64F30d65802Ad188F27921656f28F",
+  "constAddressDeployerAddress": "0x4ddE9BC9B08f2faD6E1ed4557f24FccBb51CAff7",
+  "create3DeployerAddress": "0x232bC4E96810e022d72DfD10A23574f28903A92B",
+  "tokens": {},
   "providerUrl": "http://3.79.184.123:8545/"
 }
