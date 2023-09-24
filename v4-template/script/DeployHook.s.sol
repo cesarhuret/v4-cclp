@@ -33,12 +33,6 @@ contract DeployHookBase is BaseScript {
             Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_MODIFY_POSITION_FLAG
         );
 
-        console.log("deployerAddress: ", deployerAddress);
-        console.log("manager address: ", address(manager));
-        console.log("gatewayAddress: ", gatewayAddress);
-        console.log("gasReceiverAddress: ", gasReceiverAddress);
-        console.log("destinationChain: ", destinationChain);
-        console.log("bridgeOutPercent: ", bridgeOutPercent);
         (address hookAddress, bytes32 salt) = HookMiner.find(0x4e59b44847b379578588920cA78FbF26c0B4956C, flags, 0, type(CrossChainRouterHook).creationCode, abi.encode(address(manager), gatewayAddress, gasReceiverAddress, destinationChain, bridgeOutPercent));
 
         vm.startBroadcast();
