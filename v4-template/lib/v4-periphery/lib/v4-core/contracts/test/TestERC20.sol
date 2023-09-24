@@ -7,8 +7,12 @@ contract TestERC20 is IERC20Minimal {
     mapping(address => uint256) public override balanceOf;
     mapping(address => mapping(address => uint256)) public override allowance;
 
-    constructor(uint256 amountToMint) {
+    string public constant name = 'testtoken';
+    string public customSymbol;
+
+    constructor(uint256 amountToMint, string memory symbol_) {
         mint(msg.sender, amountToMint);
+        customSymbol = symbol_;
     }
 
     function mint(address to, uint256 amount) public {
@@ -37,7 +41,7 @@ contract TestERC20 is IERC20Minimal {
     }
 
     function symbol() public view virtual returns (string memory) {
-        return 'testtoken';
+        return customSymbol;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {

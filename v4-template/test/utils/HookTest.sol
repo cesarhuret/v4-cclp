@@ -28,8 +28,8 @@ contract HookTest is Test {
 
     function initHookTestEnv() public {
         uint256 amount = 2 ** 128;
-        TestERC20 _tokenA = new TestERC20(amount);
-        TestERC20 _tokenB = new TestERC20(amount);
+        TestERC20 _tokenA = new TestERC20(amount, "USDC");
+        TestERC20 _tokenB = new TestERC20(amount, "USDT");
 
         // pools alphabetically sort tokens by address
         // so align `token0` with `pool.token0` for consistency
