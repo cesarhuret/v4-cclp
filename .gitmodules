@@ -1,0 +1,3 @@
+[submodule "v4-template/lib/axelar-cgp-solidity"]
+	path = v4-template/lib/axelar-cgp-solidity
+	url = https://github.com/axelarnetwork/axelar-cgp-solidity
