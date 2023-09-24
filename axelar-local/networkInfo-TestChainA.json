@@ -9,15 +9,15 @@
     "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   ],
   "threshold": 1,
-  "lastRelayedBlock": 290,
-  "lastExpressedBlock": 290,
-  "gatewayAddress": "0xb932C8342106776E73E39D695F3FFC3A9624eCE0",
-  "gasReceiverAddress": "0x2c8ED11fd7A058096F2e5828799c68BE88744E2F",
-  "constAddressDeployerAddress": "0xe58222DE921Cb5bD5179f2777a0BA8532d1D59bd",
-  "create3DeployerAddress": "0x935D9cb0E663571b48EE2C37C707ab6626c07c2F",
+  "lastRelayedBlock": 555,
+  "lastExpressedBlock": 555,
+  "gatewayAddress": "0x840748F7Fd3EA956E5f4c88001da5CC1ABCBc038",
+  "gasReceiverAddress": "0xde79380FBd39e08150adAA5C6c9dE3146f53029e",
+  "constAddressDeployerAddress": "0xb225f27c942d221a0D7EC72367092CB63D275793",
+  "create3DeployerAddress": "0x6Fc8c9215308D0611cd99De369E72f7B367d13cf",
   "tokens": {
-    "usdc": "0xde7972E52E7fdF0E0B551Bd45ecAee5Ce39a3120",
-    "usdt": "0x5D848E2f794FBab546E8512B2eeC73dD669Ed5Db"
+    "usdc": "0x7E8F51663708014cC327536A8759C260F2Ef6832",
+    "usdt": "0x9a8BD9Bdb8D440DDa1691c5A764e6F3CC1BdaE2c"
   },
   "providerUrl": "http://18.196.63.236:8545/"
 }

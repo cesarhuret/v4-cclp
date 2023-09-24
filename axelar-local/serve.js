@@ -46,13 +46,11 @@ async function serveNetwork(config, port) {
     chain.gateway = new ethers.Contract(config.gatewayAddress, AxelarGateway.abi, chain.ownerWallet);
     chain.gasService = AxelarGasServiceFactory.connect(config.gasReceiverAddress, chain.provider);
 
-    chain.tokens = {};
-    Object.entries(config.tokens).forEach(([k, v]) => {
-        chain.tokens[k] = new ethers.Contract(v, BurnableMintableCappedERC20.abi, chain.ownerWallet);
-    });
 
-    await giveToken(chain.ownerWallet, chain.gateway, chain.tokens.usdc, chain.ownerWallet.address, BigInt(1e18));
-    await giveToken(chain.ownerWallet, chain.gateway, chain.tokens.usdt, chain.ownerWallet.address, BigInt(1e18));
+    chain.tokens = {};
+    await chain.deployToken("Fake USDC", "USDC", 6, 100000000000000, "0xc1EeD9232A0A44c2463ACB83698c162966FBc78d", 'USDC');
+
+    console.log(await chain.gateway.tokenAddresses('USDC'))
 
     chain.server = server(chain).listen(port, () => {
         console.log(`Serving ${chain.name} on port ${port}`);
@@ -73,7 +71,7 @@ async function serveNetwork(config, port) {
 
 async function giveToken(ownerwallet, gatewayContract, tokenContract, targetAddress, amount) {
     const symbol = await tokenContract.symbol();
-    await gatewayContract.connect(ownerwallet).mintToken(ethers.utils.defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, targetAddress, amount]), "0x0000000000000000000000000000000000000000000000000000000000000000");
+    await gatewayContract.mintToken(ethers.utils.defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, targetAddress, amount]), "0x0000000000000000000000000000000000000000000000000000000000000000");
 }
 
 serveNetwork(chainAConfig, 8500);
