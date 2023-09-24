@@ -22,17 +22,28 @@ import {
 import { ColorModeSwitcher } from "./ColorModeSwitcher"
 import { Logo } from "./Logo"
 import { FaChevronDown } from "react-icons/fa"
-import { ethers } from "ethers"
+import { Signer, ethers, providers } from "ethers"
+import hookABI from "./HookABI.json";
+import erc20ABI from "./erc20ABI.json";
+import { sign } from "crypto"
 
 declare global {
   interface Window{
     ethereum?: any
   }
 }
-const chains = [
-  ['Chain A', "http://18.196.63.236:8545/"],
-  ['Chain B', "http://3.79.184.123:8545/"]
-]
+const chains = {
+  'chainA': {
+    rpc: "http://18.196.63.236:8545/",
+    hook: "0xa0DbebEB68c01554f75860A9Ed5e6C8734cfBb55",
+  },
+  'chainB': {
+    rpc: "http://3.79.184.123:8545/",
+    hook: "0xa0DbebEB68c01554f75860A9Ed5e6C8734cfBb55",
+    usdc: ""
+  }
+}
+
 
 export const App = () => {
 
@@ -43,17 +54,25 @@ export const App = () => {
   const [account, setAccount] = React.useState('')
   const [rpc, setRPC] = React.useState('')
 
-  const [signer, setSigner] = React.useState<any>(null)
+  const [signer, setSigner] = React.useState<any>(null);
+
+  const [hook, setHook] = React.useState<ethers.Contract>();
+
+  const [balances, setBalances] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     const jsonRPC = new ethers.providers.JsonRpcProvider(rpc || 'http://18.196.63.236:8545/')
     const sign = new ethers.Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', jsonRPC);
+    const chainB = new ethers.providers.JsonRpcProvider(rpc || 'http://3.79.184.123:8545/')
+
+    const hookContract = new ethers.Contract("0xa0a1885fdAb68182740403eDB58bAB14e4AF7670", hookABI.abi, sign);
     
     setSigner(sign);
     
     (async () => {
-      console.log((await jsonRPC.getNetwork()).chainId)
+      setHook(hookContract);
       setAccount(await sign.getAddress())
+      fetchBalance(sign, new ethers.providers.JsonRpcProvider(rpc || 'http://3.79.184.123:8545/'))
     })();
 
   }, [rpc])
@@ -62,9 +81,40 @@ export const App = () => {
 
     console.log(lowerTick, upperTick, amount, rpc)
 
-  
-    console.log(await signer.signMessage('hello world'))
+    if (hook) {
+      const addLiquidity = await hook.addLiquidity([
+        "0x1c1521cf734CD13B02e8150951c3bF2B438be780",
+        "0xC0340c0831Aa40A0791cF8C3Ab4287EB0a9705d8",
+        3000,
+        60,
+        "0xa0a1885fdAb68182740403eDB58bAB14e4AF7670"
+      ], [
+        lowerTick, 
+        upperTick,
+        amount,
+      ])
 
+      console.log(await addLiquidity.wait(1))
+      
+      fetchBalance(signer, new ethers.providers.JsonRpcProvider(rpc || 'http://3.79.184.123:8545/'))
+    }
+  }
+
+  const fetchBalance = async (signer: Signer, chainB: any) => {
+
+    const usdcA = new ethers.Contract("0x1c1521cf734CD13B02e8150951c3bF2B438be780", erc20ABI.abi, signer)
+    const usdtA = new ethers.Contract("0xC0340c0831Aa40A0791cF8C3Ab4287EB0a9705d8", erc20ABI.abi, signer)
+
+    const balanceUSDC = await usdcA.balanceOf(signer.getAddress())
+    const balanceUSDT = await usdtA.balanceOf(signer.getAddress())
+
+    const usdcB = new ethers.Contract("0x6f2E42BB4176e9A7352a8bF8886255Be9F3D2d13", erc20ABI.abi, chainB)
+    const usdtB = new ethers.Contract("0xA3f7BF5b0fa93176c260BBa57ceE85525De2BaF4", erc20ABI.abi, chainB)
+
+    const balanceUSDCB = await usdcB.balanceOf("0xA0dC077d2f58533ba871C137544aD77402a67E8d")
+    const balanceUSDTB = await usdtB.balanceOf("0xA0dC077d2f58533ba871C137544aD77402a67E8d")
+
+    setBalances([balanceUSDC.toNumber(), balanceUSDT.toNumber(), balanceUSDCB.toNumber(), balanceUSDTB.toNumber()])
   }
 
   return (
@@ -81,8 +131,9 @@ export const App = () => {
         </Flex>
         <VStack spacing={8}>
           <Heading>
-            Add Liquidity
+            Add Crosschain Liquidity
           </Heading>
+          <Text>USDC/USDT Pool</Text>
           <Box borderRadius={'xl'} maxW={'400px'} borderWidth={'0.1em'} p={10}>
             <HStack spacing={5} pb={10}>
               <Input size={'lg'} type='number' placeholder="Lower Tick"
@@ -97,6 +148,18 @@ export const App = () => {
             />
             <Button size={'lg'} w={'full'} onClick={addLiquidity} variant={'outline'}>Add Liquidity</Button>
           </Box>
+          <HStack gap={10}>
+            <VStack>
+              <Text>Your Balance on Chain A</Text>
+              <Text>USDC: {balances[0]}</Text>
+              <Text>USDT: {balances[1]}</Text>
+            </VStack>
+            <VStack>
+              <Text>Your Balance on Chain B</Text>
+              <Text>USDC: {balances[2]}</Text>
+              <Text>USDT: {balances[3]}</Text>
+            </VStack>
+          </HStack>
         </VStack>
       </Grid>
     </Box>
