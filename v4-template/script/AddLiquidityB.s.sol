@@ -17,41 +17,26 @@ contract AddLiquidityScript is Script {
     function setUp() public {}
 
     function run() public {
-        // IPoolManager manager = IPoolManager(0x4B8c70cF3e595D963cD4A33627d4Ba2718fD706F);
 
-        // Deploy the hook using CREATE2
+        CrossChainRouterHook hook = CrossChainRouterHook(0xA0dC077d2f58533ba871C137544aD77402a67E8d); // from chain B
 
-        // struct PoolKey {
-        //     /// @notice The lower currency of the pool, sorted numerically
-        //     Currency currency0;
-        //     /// @notice The higher currency of the pool, sorted numerically
-        //     Currency currency1;
-        //     /// @notice The pool swap fee, capped at 1_000_000. The upper 4 bits determine if the hook sets any fees.
-        //     uint24 fee;
-        //     /// @notice Ticks that involve positions must be a multiple of tick spacing
-        //     int24 tickSpacing;
-        //     /// @notice The hooks of the pool
-        //     IHooks hooks;
-        // }
+        address usdc_a = 0x1c1521cf734CD13B02e8150951c3bF2B438be780;
+        address usdt_a = 0xC0340c0831Aa40A0791cF8C3Ab4287EB0a9705d8;
+        address usdc_b = 0x6f2E42BB4176e9A7352a8bF8886255Be9F3D2d13;
+        address usdt_b = 0xA3f7BF5b0fa93176c260BBa57ceE85525De2BaF4;
 
-        CrossChainRouterHook hook = CrossChainRouterHook(0xA03DDd7B67Ce614c9e3aBfc3ED5EC2F83a100373); // from chain B
-
-        address usdt = 0x09120eAED8e4cD86D85a616680151DAA653880F2;
-        address usdc = 0xF6a8aD553b265405526030c2102fda2bDcdDC177;
-
-        PoolKey memory poolKey = PoolKey(Currency.wrap(usdt), Currency.wrap(usdc), 3000, 60, IHooks(hook));
+        PoolKey memory poolKey = PoolKey(Currency.wrap(usdc_b), Currency.wrap(usdt_b), 3000, 60, IHooks(hook));
 
         IPoolManager.ModifyPositionParams memory params = IPoolManager.ModifyPositionParams(60, 120, 100000000);
-
         
         vm.startBroadcast(vm.envUint("DEPLOYER_PRIVATE_KEY"));
 
         // hook.setDestinationInfo("0xa0DbebEB68c01554f75860A9Ed5e6C8734cfBb55", 0xc1EeD9232A0A44c2463ACB83698c162966FBc78d, 0xfc073209b7936A771F77F63D42019a3a93311869, 0xa0DbebEB68c01554f75860A9Ed5e6C8734cfBb55);
         
-        // IERC20(usdc).approve(address(hook), type(uint).max);
-        // IERC20(usdt).approve(address(hook), type(uint).max);
+        IERC20(usdc_b).approve(address(hook), type(uint).max);
+        IERC20(usdt_b).approve(address(hook), type(uint).max);
 
-        BalanceDelta delta = hook.addLiquidity(poolKey, params);
+        //BalanceDelta delta = hook.addLiquidity(poolKey, params);
 
         vm.stopBroadcast();
 

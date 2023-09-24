@@ -18,21 +18,24 @@ contract AddLiquidityScript is Script {
 
     function run() public {
 
-        CrossChainRouterHook hook = CrossChainRouterHook(0xa0DbebEB68c01554f75860A9Ed5e6C8734cfBb55); // from chain A
+        CrossChainRouterHook hook = CrossChainRouterHook(0xa0a1885fdAb68182740403eDB58bAB14e4AF7670); // from chain A
 
-        address usdc = 0xc1EeD9232A0A44c2463ACB83698c162966FBc78d;
-        address usdt = 0xfc073209b7936A771F77F63D42019a3a93311869;
+        address usdc_a = 0x1c1521cf734CD13B02e8150951c3bF2B438be780;
+        address usdt_a = 0xC0340c0831Aa40A0791cF8C3Ab4287EB0a9705d8;
+        address usdc_b = 0x6f2E42BB4176e9A7352a8bF8886255Be9F3D2d13;
+        address usdt_b = 0xA3f7BF5b0fa93176c260BBa57ceE85525De2BaF4;
 
-        PoolKey memory poolKey = PoolKey(Currency.wrap(usdc), Currency.wrap(usdt), 3000, 60, IHooks(hook));
+        PoolKey memory poolKey = PoolKey(Currency.wrap(usdc_a), Currency.wrap(usdt_a), 3000, 60, IHooks(hook));
 
         IPoolManager.ModifyPositionParams memory params = IPoolManager.ModifyPositionParams(60, 120, 100000000);
 
-        // hook.setDestinationInfo("0xA03DDd7B67Ce614c9e3aBfc3ED5EC2F83a100373", 0x09120eAED8e4cD86D85a616680151DAA653880F2, 0xF6a8aD553b265405526030c2102fda2bDcdDC177, 0xA03DDd7B67Ce614c9e3aBfc3ED5EC2F83a100373);
-        
         vm.startBroadcast(vm.envUint("DEPLOYER_PRIVATE_KEY"));
 
-        //IERC20(usdc).approve(address(hook), type(uint).max);
-        //IERC20(usdt).approve(address(hook), type(uint).max);
+        // we're on chain A. foreign hook is on chain B
+        // hook.setDestinationInfo("0xA0dC077d2f58533ba871C137544aD77402a67E8d", usdc_b, usdt_b, 0xA0dC077d2f58533ba871C137544aD77402a67E8d);
+
+        // IERC20(usdc_a).approve(address(hook), type(uint).max);
+        // IERC20(usdt_a).approve(address(hook), type(uint).max);
 
         BalanceDelta delta = hook.addLiquidity(poolKey, params);
 

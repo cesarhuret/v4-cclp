@@ -39,12 +39,8 @@ contract DeployHookBase is BaseScript {
         CrossChainRouterHook hook = new CrossChainRouterHook{salt: salt}(manager, gatewayAddress, gasReceiverAddress, destinationChain, bridgeOutPercent);
         vm.stopBroadcast();
 
-        // no need
-        // require(address(hook) == hookAddress, "CrossChainRouterHookTest: hook address mismatch");
-
         // Create the pool
         PoolKey memory poolKey = PoolKey(Currency.wrap(_token0), Currency.wrap(_token1), 3000, 60, IHooks(hook));
-        //poolId = poolKey.toId();
         
         vm.startBroadcast();
         manager.initialize(poolKey, SQRT_RATIO_1_1, ZERO_BYTES);
@@ -56,14 +52,14 @@ contract DeployHookBase is BaseScript {
 
 contract DeployTestChainA is DeployHookBase {
     // configuration
-    address constant usdc = 0xc1EeD9232A0A44c2463ACB83698c162966FBc78d;
-    address constant usdt = 0xfc073209b7936A771F77F63D42019a3a93311869;
+    address constant usdc = 0x1c1521cf734CD13B02e8150951c3bF2B438be780;
+    address constant usdt = 0xC0340c0831Aa40A0791cF8C3Ab4287EB0a9705d8;
     
     constructor() 
         DeployHookBase(
             0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, // deployerAddress
-            0xd3b893cd083f07Fe371c1a87393576e7B01C52C6, // gateway
-            0x721d8077771Ebf9B931733986d619aceea412a1C, // gasReceiver
+            0x0aD6371dd7E9923d9968D63Eb8B9858c700abD9d, // gateway
+            0x575D3d18666B28680255a202fB5d482D1949bB32, // gasReceiver
             'TestChainB', // destinationChain
             50 // bridgeOutPercent
         )
@@ -77,6 +73,7 @@ contract DeployTestChainA is DeployHookBase {
         string memory chain = loadChainName(chainId);
 
         if (tryLoadDeployment(chain, "PoolManagerChainA") == address(0)) {
+            console.log("deploying PoolManagerChainA");
             vm.startBroadcast();
             PoolManager manager = new PoolManager(500000);
             vm.stopBroadcast();
@@ -111,14 +108,14 @@ contract DeployTestChainA is DeployHookBase {
 
 contract DeployTestChainB is DeployHookBase {
     // configuration
-    address constant usdc = 0xF6a8aD553b265405526030c2102fda2bDcdDC177;
-    address constant usdt = 0x09120eAED8e4cD86D85a616680151DAA653880F2;
+    address constant usdc = 0x6f2E42BB4176e9A7352a8bF8886255Be9F3D2d13;
+    address constant usdt = 0xA3f7BF5b0fa93176c260BBa57ceE85525De2BaF4;
     
     constructor() 
         DeployHookBase(
             0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, // deployerAddress
-            0xbe18A1B61ceaF59aEB6A9bC81AB4FB87D56Ba167, // gateway
-            0xd038A2EE73b64F30d65802Ad188F27921656f28F, // gasReceiver
+            0x9e7F7d0E8b8F38e3CF2b3F7dd362ba2e9E82baa4, // gateway
+            0x6D712CB50297b97b79dE784d10F487C00d7f8c2C, // gasReceiver
             'TestChainA', // destinationChain
             50 // bridgeOutPercent
         )
@@ -132,6 +129,7 @@ contract DeployTestChainB is DeployHookBase {
         string memory chain = loadChainName(chainId);
 
         if (tryLoadDeployment(chain, "PoolManagerChainB") == address(0)) {
+            console.log("deploying PoolManagerChainB");
             vm.startBroadcast();
             PoolManager manager = new PoolManager(500000);
             vm.stopBroadcast();
@@ -149,11 +147,8 @@ contract DeployTestChainB is DeployHookBase {
         if (tryLoadDeployment(chain, "CrossChainRouterHookChainB") == address(0)) {
             address deployedAddress = deployHookAndCreatePool(
                 poolManagerAddress,
-                usdt,
-                usdc
-                // swap order
-                // usdc,
-                // usdt
+                usdc,
+                usdt
             );
 
             saveDeployment(

@@ -13,8 +13,8 @@ const {
     ConstAddressDeployer,
     Create3Deployer,
 } = require('@axelar-network/axelar-local-dev/dist/contracts');
-const chainAConfig = require('./networkInfo-TestChainA.json');
-const chainBConfig = require('./networkInfo-TestChainB.json');
+const chainAConfig = require('./networkInfo-TestChainA-new.json');
+const chainBConfig = require('./networkInfo-TestChainB-new.json');
 
 const server = require('@axelar-network/axelar-local-dev/dist/server').default;
 
@@ -51,8 +51,13 @@ async function serveNetwork(config, port) {
         "USDT": "USDT"
     };
 
-    //await chain.deployToken("Fake USDT", "USDT", 6, 100000000000000, "0x09120eAED8e4cD86D85a616680151DAA653880F2", 'USDT');
-    //console.log(await chain.gateway.tokenAddresses('USDT'))
+    // uncomment if you want to deploy tokens
+    
+    // await chain.deployToken("USDC", "USDC", 6, 100000000000000, "0x6f2E42BB4176e9A7352a8bF8886255Be9F3D2d13", 'USDC');
+    // console.log("USDC", await chain.gateway.tokenAddresses('USDC'))
+
+    // await chain.deployToken("USDT", "USDT", 6, 100000000000000, "0xA3f7BF5b0fa93176c260BBa57ceE85525De2BaF4", 'USDT');
+    // console.log("USDT", await chain.gateway.tokenAddresses('USDT'))
 
     chain.server = server(chain).listen(port, () => {
         console.log(`Serving ${chain.name} on port ${port}`);
@@ -72,10 +77,6 @@ async function serveNetwork(config, port) {
     }, relayInterval);
 }
 
-// async function giveToken(ownerwallet, gatewayContract, tokenContract, targetAddress, amount) {
-//     const symbol = await tokenContract.symbol();
-//     await gatewayContract.mintToken(ethers.utils.defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, targetAddress, amount]), "0x0000000000000000000000000000000000000000000000000000000000000000");
-// }
 
 serveNetwork(chainAConfig, 8500);
 serveNetwork(chainBConfig, 8501);
