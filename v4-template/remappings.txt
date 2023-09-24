@@ -18,3 +18,4 @@ lib/v4-periphery:v4-core/=lib/v4-periphery/lib/v4-core/contracts/
 lib/v4-periphery/lib/v4-core:@openzeppelin/contracts/=lib/v4-periphery/lib/openzeppelin-contracts/contracts/
 @axelar/=lib/axelar-gmp-sdk-solidity/
 @openzeppelin/=lib/openzeppelin-contracts/
+@cgp-solidity/=lib/axelar-cgp-solidity/contracts/
