@@ -16,10 +16,9 @@ contract CrossChainRouterHookScript is Script {
 
     function setUp() public {}
 
-    function run() public {
+    function run() public returns (address) {
         vm.broadcast();
         IPoolManager manager = IPoolManager(0x4B8c70cF3e595D963cD4A33627d4Ba2718fD706F);
-
 
         // hook contracts must have specific flags encoded in the address
         uint160 flags = uint160(
@@ -30,16 +29,14 @@ contract CrossChainRouterHookScript is Script {
         (address hookAddress, bytes32 salt) = HookMiner.find(CREATE2_DEPLOYER, flags, 1000, type(CrossChainRouterHook).creationCode, abi.encode(0x4B8c70cF3e595D963cD4A33627d4Ba2718fD706F, 0xe432150cce91c13a887f7D836923d5597adD8E31, 0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6, "base", 30));
 
         // Deploy the hook using CREATE2
-        vm.broadcast();
-        CrossChainRouterHook hook = new CrossChainRouterHook{salt: salt}(manager, 0xe432150cce91c13a887f7D836923d5597adD8E31, 0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6, "base", 30);
-        require(address(hook) == hookAddress, "CounterScript: hook address mismatch");
-
-        // Additional helpers for interacting with the pool
         vm.startBroadcast();
-        new PoolModifyPositionTest(manager);
-        new PoolSwapTest(manager);
-        new PoolDonateTest(manager);
+
+        CrossChainRouterHook hook = new CrossChainRouterHook{salt: salt}(manager, 0xe432150cce91c13a887f7D836923d5597adD8E31, 0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6, "base", 30);
+        require(address(hook) == hookAddress, "hook address mismatch");
+
         vm.stopBroadcast();
+
+        return address(hook);
     }
 
 }

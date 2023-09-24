@@ -68,6 +68,7 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         gasService = IAxelarGasService(_gasReceiver);
         destinationChain = _destinationChain;
         bridgeOutPercent = _bridgeOutPercent;
+        require(bridgeOutPercent <= 100, "bridgeOutPercent must be <= 100");
     }
 
     function setDestinationInfo(string memory _destinationContract, address _destinationToken0, address _destinationToken1, address _destinationHook) external {
