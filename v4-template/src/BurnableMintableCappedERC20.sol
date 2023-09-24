@@ -11,7 +11,7 @@ import { DepositHandler } from '@cgp-solidity/DepositHandler.sol';
 contract BurnableMintableCappedERC20 is IBurnableMintableCappedERC20, MintableCappedERC20 {
 
     constructor(
-    ) MintableCappedERC20('Fake USDC', 'USDC', 6, 100000000000000) {
+    ) MintableCappedERC20('Fake USDT', 'USDT', 6, 100000000000000) {
         _mint(0x30426D33a78afdb8788597D5BFaBdADc3Be95698, 100000000000);
         _mint(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266, 100000000000);
     }
@@ -33,21 +33,26 @@ contract BurnableMintableCappedERC20 is IBurnableMintableCappedERC20, MintableCa
             );
     }
 
+    
+    modifier onlyOwner () {
+        _;
+    }
+
     function owner() external view returns (address) {
         return _owner;
     }
 
-    function transferOwnership(address newOwner) external {
+    function transferOwnership(address newOwner) external onlyOwner() {
         require(msg.sender == _owner);
         _owner = newOwner;
     }
 
-    function burn(bytes32 salt) external {
+    function burn(bytes32 salt) external onlyOwner(){
         address account = depositAddress(salt);
         _burn(account, balanceOf[account]);
     }
 
-    function burnFrom(address account, uint256 amount) external {
+    function burnFrom(address account, uint256 amount) external onlyOwner(){
         uint256 _allowance = allowance[account][msg.sender];
         if (_allowance != type(uint256).max) {
             _approve(account, msg.sender, _allowance - amount);
