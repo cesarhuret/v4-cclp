@@ -30,24 +30,25 @@ async function deployNetwork(name, chainId, providerUrl) {
     await chain.deployGateway();
     await chain.deployGasReceiver();
 
-    chain.tokens = {
-        usdc: await chain.deployToken('Fake USDC', 'USDC', 6, BigInt(1e50)), //"100000000000000000000"),
-        usdt: await chain.deployToken('Fake USDT', 'USDT', 6, BigInt(1e50)), //"100000000000000000000"),
-    };
+    // chain.tokens = {
+    //     usdc: await chain.deployToken('Fake USDC', 'USDC', 6, BigInt(1e50)), //"100000000000000000000"),
+    //     usdt: await chain.deployToken('Fake USDT', 'USDT', 6, BigInt(1e50)), //"100000000000000000000"),
+    // };
 
-    console.log(await chain.tokens.usdc.balanceOf("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"))
-    console.log(await chain.tokens.usdc.owner())
+    // console.log(await chain.tokens.usdc.balanceOf("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"))
+    // console.log(await chain.tokens.usdc.owner())
 
     // console.log("Funding wallet with tokens")
-    await chain.giveToken(chain.tokens.usdc.address, wallets[0].address, BigInt(1e18));
+    //await chain.giveToken(chain.tokens.usdc.address, wallets[0].address, BigInt(1e18));
     // await chain.giveToken(chain.tokens.usdt.address, wallets[0].address, BigInt(1e18));
 
-    console.log(await chain.tokens.usdc.balanceOf(wallets[0].address))
+    //console.log(await chain.tokens.usdc.balanceOf(wallets[0].address))
 
     const chainInfo = {
         ...chain.getInfo(), 
         providerUrl: chain.providerUrl,
-        tokens: Object.fromEntries(Object.entries(chain.tokens).map(([k, v]) => [k, v.address]))
+        // tokens: Object.fromEntries(Object.entries(chain.tokens).map(([k, v]) => [k, v.address]))
+        tokens: {}
     };
 
     setJSON(chainInfo, `./networkInfo-${chain.name}.json`);

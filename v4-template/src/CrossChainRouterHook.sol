@@ -269,8 +269,10 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         // store in pending
         if (compareStrings(tokenSymbol, token0Symbol)) {
             pendingAmount0[recipient] += amount;
-        } else {
+        } else if (compareStrings(tokenSymbol, token1Symbol)) {
             pendingAmount1[recipient] += amount;
+        } else {
+            revert("Invalid token symbol");
         }
 
         require(address(this) == payload.hookAddress, "Destination hook address does not match");

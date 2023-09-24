@@ -31,6 +31,9 @@ contract CrossChainRouterHookTest is HookTest, Deployers, GasSnapshot {
     uint256 constant bridgeOutPercent = 10;
 
     address constant gatewayAddress = 0xb58D8FDD0452DCDBA424BDC76cc719f9f64C862E;
+
+    address destinationToken0;
+    address destinationToken1;
     
     function setUp() public {
         // creates the pool manager, test tokens, and other utility routers
@@ -47,6 +50,8 @@ contract CrossChainRouterHookTest is HookTest, Deployers, GasSnapshot {
         hook = new CrossChainRouterHook{salt: salt}(IPoolManager(address(manager)), gatewayAddress, receiverAddress, destinationChain, bridgeOutPercent);
 
         require(address(hook) == hookAddress, "CrossChainRouterHookTest: hook address mismatch");
+
+        hook.setDestinationInfo(destinationChain, address(token0), address(token1), hookAddress);
 
         // Create the pool
         poolKey = PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, 60, IHooks(hook));
