@@ -10,6 +10,14 @@
 ## Unit tests
 Run `forge test` inside `v4-template` directory
 
+`testAddLiquidity`: Test adding liquidity from the source chain. Validate that a portion of tokens are transfered to the bridge
+
+`testBridgeExecuteAndRangeBelow`: Test receiving bridged liquidity on the destination chain when the range is below the current price. Validate the receiving callback works and balance changes are correct.
+
+`testBridgeExecuteAndRangeAbove`: Test receiving bridged liquidity on the destination chain when the range is above the current price. Validate the receiving callback works and balance changes are correct.
+
+`testBridgeExecuteAndInRange`: Test receiving bridged liquidity on the destination chain when current price is in range. Validate the receiving callback works and balance changes are correct.
+
 ## Contract addresses
 
 ### Chain A
