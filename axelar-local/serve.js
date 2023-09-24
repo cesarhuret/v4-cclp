@@ -46,24 +46,27 @@ async function serveNetwork(config, port) {
     chain.gateway = new ethers.Contract(config.gatewayAddress, AxelarGateway.abi, chain.ownerWallet);
     chain.gasService = AxelarGasServiceFactory.connect(config.gasReceiverAddress, chain.provider);
 
-    chain.tokens = {};
+    chain.tokens = {
+        "USDC": "USDC",
+        "USDT": "USDT"
+    };
 
-    await chain.deployToken("Fake USDT", "USDT", 6, 100000000000000, "0x09120eAED8e4cD86D85a616680151DAA653880F2", 'USDT');
-
-    console.log(await chain.gateway.tokenAddresses('USDT'))
+    //await chain.deployToken("Fake USDT", "USDT", 6, 100000000000000, "0x09120eAED8e4cD86D85a616680151DAA653880F2", 'USDT');
+    //console.log(await chain.gateway.tokenAddresses('USDT'))
 
     chain.server = server(chain).listen(port, () => {
         console.log(`Serving ${chain.name} on port ${port}`);
     });
 
+    networks.push(chain);
     
     let relaying = false;
 
     setInterval(async () => {
         if (relaying) return;
         relaying = true;
-        await relay().catch(() => {
-            console.log("Relay failed");
+        await relay().catch((e) => {
+            console.log("Relay failed", JSON.stringify(e));
         });
         relaying = false;
     }, relayInterval);
@@ -74,5 +77,5 @@ async function serveNetwork(config, port) {
 //     await gatewayContract.mintToken(ethers.utils.defaultAbiCoder.encode(['string', 'address', 'uint256'], [symbol, targetAddress, amount]), "0x0000000000000000000000000000000000000000000000000000000000000000");
 // }
 
-//serveNetwork(chainAConfig, 8500);
+serveNetwork(chainAConfig, 8500);
 serveNetwork(chainBConfig, 8501);
