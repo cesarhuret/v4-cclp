@@ -16,6 +16,7 @@ import {CurrencyLibrary, Currency} from "@uniswap/v4-core/contracts/types/Curren
 import {BalanceDelta} from "@uniswap/v4-core/contracts/types/BalanceDelta.sol";
 import {HookTest} from "./utils/HookTest.sol";
 import {HookMiner} from "./utils/HookMiner.sol";
+import {TestHook} from "./utils/TestHook.sol";
 import "forge-std/console.sol";
 
 
@@ -23,7 +24,7 @@ contract CrossChainRouterHookTest is HookTest, Deployers, GasSnapshot {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
 
-    CrossChainRouterHook hook;
+    TestHook hook;
     PoolKey poolKey;
     PoolId poolId;
     
@@ -46,8 +47,8 @@ contract CrossChainRouterHookTest is HookTest, Deployers, GasSnapshot {
 
         address receiverAddress = address(this);
 
-        (address hookAddress, bytes32 salt) = HookMiner.find(address(this), flags, 0, type(CrossChainRouterHook).creationCode, abi.encode(address(manager), gatewayAddress, receiverAddress, destinationChain, bridgeOutPercent));
-        hook = new CrossChainRouterHook{salt: salt}(IPoolManager(address(manager)), gatewayAddress, receiverAddress, destinationChain, bridgeOutPercent);
+        (address hookAddress, bytes32 salt) = HookMiner.find(address(this), flags, 0, type(TestHook).creationCode, abi.encode(address(manager), gatewayAddress, receiverAddress, destinationChain, bridgeOutPercent));
+        hook = new TestHook{salt: salt}(IPoolManager(address(manager)), gatewayAddress, receiverAddress, destinationChain, bridgeOutPercent);
 
         require(address(hook) == hookAddress, "CrossChainRouterHookTest: hook address mismatch");
 
@@ -83,10 +84,135 @@ contract CrossChainRouterHookTest is HookTest, Deployers, GasSnapshot {
         uint256 gatewayBalance0After = token0.balanceOf(gatewayAddress);
         uint256 gatewayBalance1After = token1.balanceOf(gatewayAddress);
 
-        console.log("user diff 0 ", balance0Before - balance0After);
-        console.log("user diff 1 ", balance1Before - balance1After);
+        assertEq(balance0After - balance0Before, 29953549559107809);
+        assertEq(balance1After - balance1Before, 29953549559107809);
 
-        console.log("gateway diff 0 ", gatewayBalance0After - gatewayBalance0Before);
-        console.log("gateway diff 1 ", gatewayBalance1After - gatewayBalance1Before);
+        assertEq(gatewayBalance0After - gatewayBalance0Before, 2995354955910780);
+        assertEq(gatewayBalance1After - gatewayBalance1Before, 2995354955910780);
+    }
+
+    function testBridgeExecuteAndRangeBelow() public {
+        uint256 balance0Before = token0.balanceOf(address(this));
+        uint256 balance1Before = token1.balanceOf(address(this));
+        
+        uint256 gatewayBalance0Before = token0.balanceOf(gatewayAddress);
+        uint256 gatewayBalance1Before = token1.balanceOf(gatewayAddress);
+
+        uint256 managerBalance0Before = token0.balanceOf(address(manager));
+        uint256 managerBalance1Before = token1.balanceOf(address(manager));
+
+        hook.executeWithTokenStub(
+            address(this), //address recipient,
+            address(token0),
+            address(token1),
+            address(hook),
+            3000,
+            60,
+            -120, //int24 tickLower,
+            -60, //int24 tickUpper,
+            true, //bool doAdd,
+            false, // isToken0,
+            10 ether // amount
+        );
+
+        uint256 balance0After = token0.balanceOf(address(this));
+        uint256 balance1After = token1.balanceOf(address(this));
+
+        uint256 gatewayBalance0After = token0.balanceOf(gatewayAddress);
+        uint256 gatewayBalance1After = token1.balanceOf(gatewayAddress);
+
+        uint256 managerBalance0After = token0.balanceOf(address(manager));
+        uint256 managerBalance1After = token1.balanceOf(address(manager));
+
+        assertEq(managerBalance0After - managerBalance0Before, 0);
+        assertEq(managerBalance1After - managerBalance1Before, 10 ether);
+    }
+
+    function testBridgeExecuteAndRangeAbove() public {
+        uint256 balance0Before = token0.balanceOf(address(this));
+        uint256 balance1Before = token1.balanceOf(address(this));
+        
+        uint256 gatewayBalance0Before = token0.balanceOf(gatewayAddress);
+        uint256 gatewayBalance1Before = token1.balanceOf(gatewayAddress);
+
+        uint256 managerBalance0Before = token0.balanceOf(address(manager));
+        uint256 managerBalance1Before = token1.balanceOf(address(manager));
+
+        hook.executeWithTokenStub(
+            address(this), //address recipient,
+            address(token0),
+            address(token1),
+            address(hook),
+            3000,
+            60,
+            120, //int24 tickLower,
+            180, //int24 tickUpper,
+            true, //bool doAdd,
+            true, // isToken0,
+            10 ether // amount
+        );
+
+        uint256 balance0After = token0.balanceOf(address(this));
+        uint256 balance1After = token1.balanceOf(address(this));
+
+        uint256 gatewayBalance0After = token0.balanceOf(gatewayAddress);
+        uint256 gatewayBalance1After = token1.balanceOf(gatewayAddress);
+
+        uint256 managerBalance0After = token0.balanceOf(address(manager));
+        uint256 managerBalance1After = token1.balanceOf(address(manager));
+
+        assertEq(managerBalance0After - managerBalance0Before, 10 ether);
+        assertEq(managerBalance1After - managerBalance1Before, 0);
+    }
+    
+    function testBridgeExecuteAndInRange() public {
+        uint256 balance0Before = token0.balanceOf(address(this));
+        uint256 balance1Before = token1.balanceOf(address(this));
+        
+        uint256 gatewayBalance0Before = token0.balanceOf(gatewayAddress);
+        uint256 gatewayBalance1Before = token1.balanceOf(gatewayAddress);
+
+        uint256 managerBalance0Before = token0.balanceOf(address(manager));
+        uint256 managerBalance1Before = token1.balanceOf(address(manager));
+
+        hook.executeWithTokenStub(
+            address(this), //address recipient,
+            address(token0),
+            address(token1),
+            address(hook),
+            3000,
+            60,
+            -60, //int24 tickLower,
+            120, //int24 tickUpper,
+            false, //bool doAdd,
+            false, // isToken0,
+            10 ether // amount
+        );
+        
+        hook.executeWithTokenStub(
+            address(this), //address recipient,
+            address(token0),
+            address(token1),
+            address(hook),
+            3000,
+            60,
+            -60, //int24 tickLower,
+            120, //int24 tickUpper,
+            true, //bool doAdd,
+            true, // isToken0,
+            10 ether // amount
+        );
+
+        uint256 balance0After = token0.balanceOf(address(this));
+        uint256 balance1After = token1.balanceOf(address(this));
+
+        uint256 gatewayBalance0After = token0.balanceOf(gatewayAddress);
+        uint256 gatewayBalance1After = token1.balanceOf(gatewayAddress);
+
+        uint256 managerBalance0After = token0.balanceOf(address(manager));
+        uint256 managerBalance1After = token1.balanceOf(address(manager));
+
+        assertEq(managerBalance0After - managerBalance0Before, 10000000000000000000);
+        assertEq(managerBalance1After - managerBalance1Before, 5007499619400846838);
     }
 }

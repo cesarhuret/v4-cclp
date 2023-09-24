@@ -49,6 +49,7 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         address sender;
         PoolKey key;
         IPoolManager.ModifyPositionParams params;
+        bool doBridge;
     }
 
     struct AxelarPayload {
@@ -100,11 +101,12 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         return CrossChainRouterHook.beforeInitialize.selector;
     }
 
+    // user uses this function to add liquidity
     function addLiquidity(PoolKey memory key, IPoolManager.ModifyPositionParams memory params)
         external
         returns (BalanceDelta delta)
     {
-        delta = abi.decode(poolManager.lock(abi.encode(CallbackData(msg.sender, key, params))), (BalanceDelta));
+        delta = abi.decode(poolManager.lock(abi.encode(CallbackData(msg.sender, key, params, true))), (BalanceDelta));
     }
 
     function beforeModifyPosition(address sender, PoolKey calldata, IPoolManager.ModifyPositionParams calldata, bytes calldata)
@@ -131,70 +133,77 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         
         BalanceDelta delta;
 
+        // if remove liquidity, keep it simple
         if (data.params.liquidityDelta < 0) {
             // remove liquidity, no custom logic here
             delta = poolManager.modifyPosition(key, params, ZERO_BYTES);
             _takeDeltas(data.sender, data.key, delta);
         } else {
-            // first, bridge out a portion
-            uint128 liquidityToBridge = uint128(uint256(params.liquidityDelta) * bridgeOutPercent / 100);
 
-            (uint160 currentSqrtPriceX96, int24 currentTick,,,,) = poolManager.getSlot0(poolId);
+            if (data.doBridge) {
+                // first, bridge out a portion
+                uint128 liquidityToBridge = uint128(uint256(params.liquidityDelta) * bridgeOutPercent / 100);
 
-            AxelarPayload memory payload = AxelarPayload({
-                recipient: sender,
-                token0: destinationToken0,
-                token1: destinationToken1,
-                hookAddress: destinationHook,
-                fee: key.fee,
-                tickSpacing: key.tickSpacing,
-                tickLower: params.tickLower,
-                tickUpper: params.tickUpper,
-                doAdd: true
-            });
+                (uint160 currentSqrtPriceX96, int24 currentTick,,,,) = poolManager.getSlot0(poolId);
 
-            if (currentTick < params.tickLower) {
-                // only need to bridge out token0
-                uint256 amount0 = params.tickLower.getSqrtRatioAtTick().getAmount0Delta(
-                            params.tickUpper.getSqrtRatioAtTick(),
-                            liquidityToBridge,
-                            false
-                        );
-                _bridgeOut(sender, data.key.currency0, amount0, payload);
-            } else if (currentTick < params.tickUpper) {
-                // bridge out both
-                uint256 amount0 = currentSqrtPriceX96.getAmount0Delta(
-                            params.tickUpper.getSqrtRatioAtTick(),
-                            liquidityToBridge,
-                            false
-                        );
+                AxelarPayload memory payload = AxelarPayload({
+                    recipient: sender,
+                    token0: destinationToken0,
+                    token1: destinationToken1,
+                    hookAddress: destinationHook,
+                    fee: key.fee,
+                    tickSpacing: key.tickSpacing,
+                    tickLower: params.tickLower,
+                    tickUpper: params.tickUpper,
+                    doAdd: true
+                });
 
-                uint256 amount1 = params.tickLower.getSqrtRatioAtTick().getAmount1Delta(
-                            currentSqrtPriceX96,
-                            liquidityToBridge,
-                            false
-                        );
-                
-                // The recipient only adds LP in the second call
-                payload.doAdd = false;
-                _bridgeOut(sender, data.key.currency0, amount0, payload);
-                payload.doAdd = true;
-                _bridgeOut(sender, data.key.currency1, amount1, payload);
-            } else {
-                // bridge out token1
-                uint256 amount1 = params.tickLower.getSqrtRatioAtTick().getAmount1Delta(
-                            params.tickUpper.getSqrtRatioAtTick(),
-                            liquidityToBridge,
-                            false
-                        );
-                _bridgeOut(sender, data.key.currency1, amount1, payload);
+                if (currentTick < params.tickLower) {
+                    // only need to bridge out token0
+                    uint256 amount0 = params.tickLower.getSqrtRatioAtTick().getAmount0Delta(
+                                params.tickUpper.getSqrtRatioAtTick(),
+                                liquidityToBridge,
+                                false
+                            );
+                    _bridgeOut(sender, data.key.currency0, amount0, payload);
+                } else if (currentTick < params.tickUpper) {
+                    // bridge out both
+                    uint256 amount0 = currentSqrtPriceX96.getAmount0Delta(
+                                params.tickUpper.getSqrtRatioAtTick(),
+                                liquidityToBridge,
+                                false
+                            );
+
+                    uint256 amount1 = params.tickLower.getSqrtRatioAtTick().getAmount1Delta(
+                                currentSqrtPriceX96,
+                                liquidityToBridge,
+                                false
+                            );
+                    
+                    // The recipient only adds LP in the second call
+                    payload.doAdd = false;
+                    _bridgeOut(sender, data.key.currency0, amount0, payload);
+                    payload.doAdd = true;
+                    _bridgeOut(sender, data.key.currency1, amount1, payload);
+                } else {
+                    // bridge out token1
+                    uint256 amount1 = params.tickLower.getSqrtRatioAtTick().getAmount1Delta(
+                                params.tickUpper.getSqrtRatioAtTick(),
+                                liquidityToBridge,
+                                false
+                            );
+                    _bridgeOut(sender, data.key.currency1, amount1, payload);
+                }
+
+                // next, add liquidity to pool manager with the remaining liquidity
+                params.liquidityDelta -= int256(uint256(liquidityToBridge));
+                require(params.liquidityDelta > 0, "liquidityDelta must be positive");
+                // delta = poolManager.modifyPosition(data.key, data.params, ZERO_BYTES);
+                // _settleDeltas(data.sender, data.key, delta);
             }
 
-            // next, add liquidity to pool manager with the remaining liquidity
-            params.liquidityDelta -= int256(uint256(liquidityToBridge));
-            require(params.liquidityDelta > 0, "liquidityDelta must be positive");
+            // finally, add LP to pool manager
             delta = poolManager.modifyPosition(data.key, data.params, ZERO_BYTES);
-
             _settleDeltas(data.sender, data.key, delta);
         }
 
@@ -215,20 +224,20 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         token.transferFrom(sender, address(this), amount);
 
         // for testing
-        token.transfer(address(gateway), amount);
+        // token.transfer(address(gateway), amount);
         
-        // token.approve(address(gateway), amount);
-        // gasService.payNativeGasForContractCallWithToken{ value: 0 wei }( 
-        //     address(this),
-        //     destinationChain,
-        //     destinationContract,
-        //     payload,
-        //     symbol,
-        //     amount,
-        //     msg.sender // TODO
-        // );
+        token.approve(address(gateway), amount);
+        gasService.payNativeGasForContractCallWithToken{ value: 0 wei }( 
+            address(this),
+            destinationChain,
+            destinationContract,
+            payload,
+            symbol,
+            amount,
+            msg.sender // TODO
+        );
 
-        // gateway.callContractWithToken(destinationChain, destinationContract, payload, symbol, amount);
+        gateway.callContractWithToken(destinationChain, destinationContract, payload, symbol, amount);
     }
 
     function _takeDeltas(address sender, PoolKey memory key, BalanceDelta delta) internal {
@@ -254,13 +263,25 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
         }
     }
 
+    // wrapper function using calldata
     function _executeWithToken(
-        string calldata,
-        string calldata,
+        string calldata param1,
+        string calldata param2,
         bytes calldata encodedPayload,
         string calldata tokenSymbol,
         uint256 amount
     ) internal override {
+        // Call the internal function
+        _executeWithTokenInternal(param1, param2, encodedPayload, tokenSymbol, amount);
+    }
+
+    function _executeWithTokenInternal(
+        string memory,
+        string memory,
+        bytes memory encodedPayload,
+        string memory tokenSymbol,
+        uint256 amount
+    ) internal {
         
         AxelarPayload memory payload = abi.decode(encodedPayload, (AxelarPayload));
         
@@ -292,7 +313,7 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
 
             PoolId poolId = key.toId();
 
-            (uint160 currentSqrtPriceX96,,,,,) = poolManager.getSlot0(poolId);
+            (uint160 currentSqrtPriceX96, int24 currentTick,,,,) = poolManager.getSlot0(poolId);
 
             {
                 uint160 lowerSqrtPriceX96 = tickLower.getSqrtRatioAtTick();
@@ -306,20 +327,18 @@ contract CrossChainRouterHook is BaseHook, ILockCallback, AxelarExecutable {
                     pendingAmount1[recipient]
                 );
 
-
                 IPoolManager.ModifyPositionParams memory params = IPoolManager.ModifyPositionParams({
                     liquidityDelta: int256(uint256(liquidity)),
                     tickLower: tickLower,
                     tickUpper: tickUpper
                 });
-
-                BalanceDelta delta = poolManager.modifyPosition(key, params, ZERO_BYTES);
-
-                // use tokens stored in this contract to settle
-                _settleDeltas(address(this), key, delta);
+                
+                // lock
+                BalanceDelta delta = abi.decode(poolManager.lock(abi.encode(CallbackData(msg.sender, key, params, false))), (BalanceDelta));
 
                 uint256 addedAmount0 = uint256(uint128(delta.amount0()));
                 uint256 addedAmount1 = uint256(uint128(delta.amount1()));
+
                 pendingAmount0[recipient] -= addedAmount0;
                 pendingAmount1[recipient] -= addedAmount1;
             }
